@@ -8,12 +8,12 @@ public class PageRankVertex implements Vertex<Double, Double> {
 
     private Integer vertexId;
     private ArrayList<Integer> toEdges;
-    private volatile HashMap<Integer,Boolean> runMap;
-    private volatile ArrayList<Boolean> stopMap;
-    private volatile HashMap<Integer,LinkedBlockingQueue<Double>> messageMap;
+    private volatile static HashMap<Integer,Boolean> runMap;
+    private volatile static ArrayList<Boolean> stopMap;
+    private volatile static HashMap<Integer,LinkedBlockingQueue<Double>> messageMap;
     private Double weight;
     private volatile static Boolean runStop;
-    private volatile Double[] vertexWeights;
+    private volatile static Double[] vertexWeights;
     private volatile static Object monitor = new Object();
 
     public PageRankVertex(Integer vertexId, Double[] vertexWeights, ArrayList<Integer> toEdges, HashMap<Integer,Boolean> runMap,
@@ -72,9 +72,7 @@ public class PageRankVertex implements Vertex<Double, Double> {
     }
 
     public void setRunStop(Boolean flag){
-        synchronized (this.runStop) {
-            this.runStop = flag;
-        }
+        this.runStop = flag;
         synchronized (this.monitor) {
             this.monitor.notifyAll();
         }
@@ -105,7 +103,6 @@ public class PageRankVertex implements Vertex<Double, Double> {
             if(messages.size()==0) {
                 break;
             }
-            System.out.println(this.vertexId + " " + messages);
             while(!messages.isEmpty()){
                 try {
                     messageList.add(messages.take());
@@ -115,12 +112,13 @@ public class PageRankVertex implements Vertex<Double, Double> {
                 }
             }
             this.compute(messageList);
+            Boolean flag = true;
             synchronized (this.runMap){
                 this.runMap.put(this.vertexId, false);
-            }
-            Boolean flag = true;
-            for(Integer i:this.runMap.keySet()){
-                flag = flag && !this.runMap.get(i);
+                for(Integer i:this.runMap.keySet()){
+                    flag = flag && !this.runMap.get(i);
+                }
+                System.out.println(this.vertexId + " compute done " + this.runMap);
             }
             if (flag) {
                 this.setRunStop(flag);
@@ -128,31 +126,43 @@ public class PageRankVertex implements Vertex<Double, Double> {
             else {
                 this.waitOnRun(true);
             }
+            System.out.println(this.vertexId + " message starting " + this.runMap);
+            for(Integer i = 0; i < toEdges.size(); i++){
+                if(this.stopMap.get(toEdges.get(i))){
+                    toEdges.remove(i);
+                }
+            }
             for(Integer e:toEdges) {
                 sendMessageTo(e, this.weight/toEdges.size());
             }
             delta = abs(this.weight - oldWeight);
+            flag = true;
             synchronized (this.runMap){
                 this.runMap.put(this.vertexId,true);
+                for(Integer key:this.runMap.keySet()){
+                    flag = flag && this.runMap.get(key);
+                }
+                System.out.println(this.vertexId + " message done " + this.runMap);
             }
-            flag = true;
-            for(Integer key:this.runMap.keySet()){
-                flag = flag && this.runMap.get(key);
-            }
+
             if (flag) {
                 this.setRunStop(!flag);
             }
             else {
                 this.waitOnRun(false);
             }
-
+            System.out.println(this.vertexId + " compute starting " + this.runMap);
         }
-
+        System.out.println(this.vertexId + "exiting supersteps");
         this.voteToHalt();
+        Boolean flag = true;
         synchronized (this.runMap){
             this.runMap.remove(this.vertexId);
-            if(this.runMap.size()==1){
-                this.setRunStop(true);
+            for(Integer i:this.runMap.keySet()){
+                flag = flag && !this.runMap.get(i);
+            }
+            if(flag){
+                this.setRunStop(flag);
             }
         }
         synchronized (this.messageMap){
