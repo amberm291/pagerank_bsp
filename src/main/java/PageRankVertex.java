@@ -8,7 +8,7 @@ public class PageRankVertex implements Vertex<Double, Double> {
 
     private Integer vertexId;
     private ArrayList<Integer> toEdges;
-    private volatile ArrayList<Boolean> runMap;
+    private volatile HashMap<Integer,Boolean> runMap;
     private volatile ArrayList<Boolean> stopMap;
     private volatile HashMap<Integer,LinkedBlockingQueue<Double>> messageMap;
     private Double weight;
@@ -16,7 +16,7 @@ public class PageRankVertex implements Vertex<Double, Double> {
     private volatile Double[] vertexWeights;
     private volatile static Object monitor = new Object();
 
-    public PageRankVertex(Integer vertexId, Double[] vertexWeights, ArrayList<Integer> toEdges, ArrayList<Boolean> runMap,
+    public PageRankVertex(Integer vertexId, Double[] vertexWeights, ArrayList<Integer> toEdges, HashMap<Integer,Boolean> runMap,
                           ArrayList<Boolean> stopMap, HashMap<Integer, LinkedBlockingQueue<Double>> messageMap, Boolean runStop) {
         this.vertexId = vertexId;
         this.toEdges = toEdges;
@@ -44,15 +44,15 @@ public class PageRankVertex implements Vertex<Double, Double> {
         for(Double i:messages){
             sumMessages += i;
         }
-        this.weight = (1 - this.damping) + this.damping * sumMessages;
+        this.weight = (1 - this.damping)/this.runMap.size() + this.damping * sumMessages;
+        this.messageMap.put(this.vertexId,new LinkedBlockingQueue<Double>());
     }
 
     @Override
     public void sendMessageTo(int neighborID, Double message) {
-        System.out.println(this.vertexId + message.toString());
         try {
-            if(this.messageMap.containsKey(neighborID)) {
-                synchronized (this.messageMap) {
+            synchronized (this.messageMap) {
+                if(this.messageMap.containsKey(neighborID)) {
                     LinkedBlockingQueue<Double> messages = this.messageMap.get(neighborID);
                     messages.put(message);
                     this.messageMap.put(neighborID, messages);
@@ -97,11 +97,15 @@ public class PageRankVertex implements Vertex<Double, Double> {
         Double oldWeight = 0.0;
         Double delta = abs(this.weight - oldWeight);
         ArrayList<Double> messageList;
-        Integer counter = 1;
-        while(counter > 0){
+        Integer counter = 3;
+        while(delta > this.tolerance){
             oldWeight = this.getValue();
             messageList = new ArrayList<Double>();
             LinkedBlockingQueue<Double> messages = this.messageMap.get(this.vertexId);
+            if(messages.size()==0) {
+                break;
+            }
+            System.out.println(this.vertexId + " " + messages);
             while(!messages.isEmpty()){
                 try {
                     messageList.add(messages.take());
@@ -111,13 +115,12 @@ public class PageRankVertex implements Vertex<Double, Double> {
                 }
             }
             this.compute(messageList);
-
             synchronized (this.runMap){
-                this.runMap.set(this.vertexId, false);
+                this.runMap.put(this.vertexId, false);
             }
             Boolean flag = true;
-            for(Boolean i:this.runMap){
-                flag = flag && !i;
+            for(Integer i:this.runMap.keySet()){
+                flag = flag && !this.runMap.get(i);
             }
             if (flag) {
                 this.setRunStop(flag);
@@ -125,18 +128,16 @@ public class PageRankVertex implements Vertex<Double, Double> {
             else {
                 this.waitOnRun(true);
             }
-
-            System.out.println(this.vertexId.toString() + this.weight/toEdges.size());
             for(Integer e:toEdges) {
                 sendMessageTo(e, this.weight/toEdges.size());
             }
             delta = abs(this.weight - oldWeight);
             synchronized (this.runMap){
-                this.runMap.set(this.vertexId,true);
+                this.runMap.put(this.vertexId,true);
             }
             flag = true;
-            for(Boolean i:this.runMap){
-                flag = flag && i;
+            for(Integer key:this.runMap.keySet()){
+                flag = flag && this.runMap.get(key);
             }
             if (flag) {
                 this.setRunStop(!flag);
@@ -144,12 +145,15 @@ public class PageRankVertex implements Vertex<Double, Double> {
             else {
                 this.waitOnRun(false);
             }
-            System.out.println(this.vertexId.toString() + messageList.toString());
-            counter--;
+
         }
+
         this.voteToHalt();
         synchronized (this.runMap){
             this.runMap.remove(this.vertexId);
+            if(this.runMap.size()==1){
+                this.setRunStop(true);
+            }
         }
         synchronized (this.messageMap){
             this.messageMap.remove(this.vertexId);

@@ -3,7 +3,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class PageRank {
-    private ArrayList<Boolean> runMap = new ArrayList<Boolean>();
+    private HashMap<Integer,Boolean> runMap = new HashMap<>();
     private ArrayList<Boolean> stopMap = new ArrayList<Boolean>();
     private HashMap<Integer, LinkedBlockingQueue<Double>> messageMap = new HashMap<>();
     private HashMap<Integer, ArrayList<Integer>> adjList = new HashMap<>();
@@ -14,7 +14,7 @@ public class PageRank {
         this.vertexWeights = new Double[size];
         this.initialWeight = 1.0/size;
         for(int i = 0; i < size; i++){
-            this.runMap.add(true);
+            this.runMap.put(i,true);
             this.stopMap.add(false);
             this.messageMap.put(i,new LinkedBlockingQueue<Double>());
             this.adjList.put(i, new ArrayList<Integer>());
@@ -33,9 +33,10 @@ public class PageRank {
         }
 
         for(int key:this.adjList.keySet()){
+            ArrayList<Integer> copyList = new ArrayList<>(defaultList);
             if(this.adjList.get(key).size()==0){
-                defaultList.remove(key);
-                this.adjList.put(key,defaultList);
+                copyList.remove(key);
+                this.adjList.put(key,copyList);
             }
         }
 
@@ -82,7 +83,7 @@ public class PageRank {
     public static void main(String[] args) {
         // Graph has vertices from 0 to `size-1`
         // and edges 1->0, 2->0, 3->0
-        int size = 4;
+        int size = 5;
         int[] from = {1,2,3};
         int[] to = {0,0,0};
 
