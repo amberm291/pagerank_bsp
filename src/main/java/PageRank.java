@@ -5,7 +5,7 @@ import java.util.concurrent.*;
 public class PageRank {
     private HashMap<Integer,Boolean> runMap = new HashMap<>();
     private ArrayList<Boolean> stopMap = new ArrayList<Boolean>();
-    private HashMap<Integer, LinkedBlockingQueue<Double>> messageMap = new HashMap<>();
+    private HashMap<Integer, HashMap<Integer, Double>> messageMap = new HashMap<>();
     private HashMap<Integer, ArrayList<Integer>> adjList = new HashMap<>();
     private Double initialWeight;
     private Double[] vertexWeights;
@@ -16,7 +16,7 @@ public class PageRank {
         for(int i = 0; i < size; i++){
             this.runMap.put(i,true);
             this.stopMap.add(false);
-            this.messageMap.put(i,new LinkedBlockingQueue<Double>());
+            this.messageMap.put(i,new HashMap<Integer,Double>());
             this.adjList.put(i, new ArrayList<Integer>());
             this.vertexWeights[i] = this.initialWeight;
         }
@@ -43,14 +43,9 @@ public class PageRank {
         for(int i =  0; i < size; i++){
             ArrayList<Integer> edges = this.adjList.get(i);
             for(Integer edge:edges){
-                try {
-                    LinkedBlockingQueue<Double> queue = this.messageMap.get(edge);
-                    queue.put(this.initialWeight/edges.size());
-                    this.messageMap.put(edge,queue);
-                }
-                catch(InterruptedException e){
-                    e.printStackTrace();
-                }
+                HashMap<Integer,Double> queue = this.messageMap.get(edge);
+                queue.put(i,this.initialWeight/edges.size());
+                this.messageMap.put(edge,queue);
             }
         }
     }
@@ -85,7 +80,7 @@ public class PageRank {
         // and edges 1->0, 2->0, 3->0
         int size = 5;
         int[] from = {1,2,3};
-        int[] to = {0,0,0};
+        int[] to = {2,1,0};
 
         PageRank pr = new PageRank(size, from, to);
 
