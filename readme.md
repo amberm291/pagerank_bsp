@@ -1,8 +1,8 @@
 ## PageRank in Pregel's Bulk Synchronous Parallel model
 
-Implementation of PageRank under Pregel's Bulk Synchronous Parallel (BSP) model. Each vertex is deployed on a separate thread and the execution is synchronized by using wait and notify.
+Implementation of PageRank under Pregel's Bulk Synchronous Parallel (BSP) model. Each vertex is deployed on a separate thread and the execution is synchronized by using wait and notify. 
 
-# Build
+## Build
 
 Compile and test
 ```
@@ -19,7 +19,7 @@ Test
 ./gradlew test
 ```
 
-# Input/Output Format
+## Input/Output Format
 
 ```
 new PageRank(5, {1,2,3}, {0,0,0})

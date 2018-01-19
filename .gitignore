@@ -1,5 +1,7 @@
 # Take from Gradle project
 
+gradle*
+
 # Gradle
 # ------
 .gradle
