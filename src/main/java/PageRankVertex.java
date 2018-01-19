@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.concurrent.*;
 import static java.lang.Math.*;
 
 public class PageRankVertex implements Vertex<Double, Double> {
@@ -90,8 +89,7 @@ public class PageRankVertex implements Vertex<Double, Double> {
         Double oldWeight = 0.0;
         Double delta = abs(this.weight - oldWeight);
         ArrayList<Double> messageList;
-        while(delta > this.tolerance){
-            oldWeight = this.getValue();
+        while(delta >= this.tolerance){
             messageList = new ArrayList<Double>();
             HashMap<Integer,Double> messages = this.messageMap.get(this.vertexId);
             if(messages.size()==0) {
@@ -100,7 +98,9 @@ public class PageRankVertex implements Vertex<Double, Double> {
             for(Integer edge:messages.keySet()){
                 messageList.add(messages.get(edge));
             }
+            oldWeight = this.getValue();
             this.compute(messageList);
+            delta = abs(this.weight - oldWeight);
             Boolean flag = true;
             synchronized (this.runMap){
                 this.runMap.put(this.vertexId, false);
@@ -117,7 +117,6 @@ public class PageRankVertex implements Vertex<Double, Double> {
             for(Integer e:this.toEdges) {
                 sendMessageTo(e, this.weight/toEdges.size());
             }
-            delta = abs(this.weight - oldWeight);
             flag = true;
             synchronized (this.runMap){
                 this.runMap.put(this.vertexId,true);

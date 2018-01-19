@@ -1,6 +1,4 @@
-import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 public class PageRank {
     private HashMap<Integer,Boolean> runMap = new HashMap<>();
@@ -69,9 +67,12 @@ public class PageRank {
             }
         }
 
+        Double sum = 0.0;
         for(int i = 0; i < this.vertexWeights.length; i++){
             System.out.println(vertexWeights[i]);
+            sum += vertexWeights[i];
         }
+        System.out.println(sum);
 
     }
 
@@ -80,7 +81,7 @@ public class PageRank {
         // and edges 1->0, 2->0, 3->0
         int size = 5;
         int[] from = {1,2,3};
-        int[] to = {2,1,0};
+        int[] to = {0,0,0};
 
         PageRank pr = new PageRank(size, from, to);
 
