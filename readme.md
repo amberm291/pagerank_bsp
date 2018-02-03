@@ -26,5 +26,5 @@ new PageRank(5, {1,2,3}, {0,0,0})
 ```
 means the graph has five vertices, `0, 1, 2, 3, 4`, and three directed edges, `1->0, 2->0, 3->0`.
 
-This project was partly done as course requirement for "Systems for Data Science" course(590S) in University of Massachusetts and the interface code was provided by [PLASMA lab](https://github.com/plasma-umass) at UMass.
+This project was partly developed as a requirement for the "Systems for Data Science" course(590S) at University of Massachusetts. The interface code was provided by the [PLASMA lab](https://github.com/plasma-umass).
 
